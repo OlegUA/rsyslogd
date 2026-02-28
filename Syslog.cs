@@ -164,9 +164,15 @@ namespace rsyslogd {
         private static string DecodePacket(string log) {
             string result = null;
             try {
-                string[] x = log.Trim().Split(new char[] { '<', '>'});
-                int pri = int.Parse(x[1]);
-                string message = x[2].Trim().TrimEnd('\n','\r');
+                int start = log.IndexOf('<'); // Ensure it starts with '<'
+                int stop = log.IndexOf('>');  // Ensure it has a closing '>'
+                if(start != 0 || stop <= start) {
+                    logger.Warn($"Invalid syslog packet format: '{log}'. Missing or misplaced '<' and '>'.");
+                    return null;
+                }
+                string pri_code = log.Substring(start + 1, stop - start - 1);
+                int pri = int.Parse(pri_code);
+                string message = log.Substring(stop + 1).Trim().TrimEnd('\n','\r');
 
                 string date = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff");
 
