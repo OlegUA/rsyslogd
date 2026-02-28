@@ -74,6 +74,10 @@ namespace rsyslogd {
             "CRON",
             "AUTHPRIV",
             "FTP",
+            "SYSTEM1",
+            "SYSTEM2",
+            "SYSTEM3",
+            "SYSTEM4",
             "LOCAL0",
             "LOCAL1",
             "LOCAL2",
@@ -161,7 +165,7 @@ namespace rsyslogd {
             }
         }
 
-        private static string DecodePacket(string log) {
+        public static string DecodePacket(string log) {
             string result = null;
             try {
                 int start = log.IndexOf('<'); // Ensure it starts with '<'
@@ -171,7 +175,7 @@ namespace rsyslogd {
                     return null;
                 }
                 string pri_code = log.Substring(start + 1, stop - start - 1);
-                int pri = int.Parse(pri_code);
+                uint pri = uint.Parse(pri_code);
                 string message = log.Substring(stop + 1).Trim().TrimEnd('\n','\r');
 
                 string date = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff");
@@ -180,7 +184,7 @@ namespace rsyslogd {
 
                 if(msgParts.Length > 4) {
                     // Remove the first 3 parts (e.g., "Oct 27 14:23:01.567")
-                    message = string.Join(" ", msgParts, 4, msgParts.Length - 4);
+                    message = string.Join(" ", msgParts, 3, msgParts.Length - 3);
                 }
 
                 if(SyslogSettings.INSTANCE.ShowRemoteDateAndTime) {
@@ -189,8 +193,8 @@ namespace rsyslogd {
                     }
                 }
 
-                int facility = pri >> 3;
-                int severity = pri & 0x7;
+                uint facility = (pri >> 3) & 0xff;
+                uint severity = pri & 0x7;
 
                 result = $"{date} {_severityNames[severity],-8} {_facilityNames[facility],-6} {message}";
             } catch(Exception ex) {
@@ -303,7 +307,7 @@ namespace rsyslogd {
                     await writer.FlushAsync();
                 }
             } catch(Exception ex) {
-                logger.Error($"Error writing to log file {_filePath}: {ex.Message}"); 
+                logger.Error($"Error writing to log file {_filePath}: {ex.Message}");
             } finally {
                 _writeLock.Release();
             }
